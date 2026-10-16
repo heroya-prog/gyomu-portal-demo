@@ -1,0 +1,872 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>業務ポータル体験版</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800&display=swap">
+<style>
+:root{
+  color-scheme:light;
+  --canvas:#f5f3ec; --soft:#ece9df; --paper:#ffffff; --line:#c9c4b4; --line-strong:#b0a996;
+  --ink:#1c1a15; --muted:#6b6559;
+  --brand:#23402f; --brand-soft:#e4eae4;
+  --action:#c4472b;
+  --dark:#1b2620; --dark-raise:#23402f; --dark-line:#35443b; --dark-muted:#a9b3ac;
+  --accent:#23633a; --accent-soft:#dde8de; --accent-line:#8fb39a;
+  --warning:#8a6414; --warning-soft:#f0e2c8; --warning-line:#c9a96a; --yellow:#c3921a;
+  --danger:#9a3520; --danger-soft:#f2dad3; --danger-line:#c4877a; --red:#b8391f;
+  --pm-done:#57524a; --pm-todo:#bdb7a7; --today:#2f63ad;
+  --r-card:9px; --r-ctl:6px; --r-chip:999px; --r-sheet:14px 14px 0 0;
+  --banner-h:34px; --tab-h:58px;
+  --font:"Noto Sans JP","Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic UI","Yu Gothic",Meiryo,-apple-system,BlinkMacSystemFont,sans-serif;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--canvas);color:var(--ink);font-family:var(--font);font-size:14px;line-height:1.6;overflow-x:hidden}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+h1,h2,h3,p,ol,ul{margin:0}
+ol,ul{padding:0;list-style:none}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+
+/* 見本の帯（常時表示） */
+.demo-banner{position:sticky;top:0;z-index:60;height:var(--banner-h);display:flex;align-items:center;justify-content:center;padding:0 12px;background:var(--warning-soft);border-bottom:1px solid var(--warning-line);color:#4a3508;font-size:13px;font-weight:800;text-align:center}
+
+/* 全体レイアウト（スマホ: 下タブ / パソコン: 左サイドバー） */
+.shell{display:block}
+.side{display:none}
+.main{padding:0 16px calc(var(--tab-h) + 72px + env(safe-area-inset-bottom));max-width:780px;margin:0 auto}
+.top{position:sticky;top:var(--banner-h);z-index:30;background:var(--canvas);display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 0 8px}
+.brand-m{font-weight:800;font-size:16px;display:flex;align-items:center;gap:8px;white-space:nowrap}
+.brand-badge{display:grid;place-items:center;width:26px;height:26px;border-radius:var(--r-card);background:var(--brand);color:#fff;font-size:14px;font-weight:800}
+.seg{display:inline-flex;background:var(--soft);border:1px solid var(--line);border-radius:var(--r-chip);padding:3px}
+.seg button{border:0;background:transparent;border-radius:var(--r-chip);padding:7px 12px;min-height:36px;font-weight:700;color:var(--muted);font-size:13px;white-space:nowrap}
+.seg button[aria-pressed="true"]{background:var(--paper);color:var(--ink);box-shadow:0 1px 3px rgba(28,26,21,.18)}
+.seg .long{display:none}
+
+.tabs{position:fixed;left:0;right:0;bottom:0;z-index:50;height:calc(var(--tab-h) + env(safe-area-inset-bottom));padding-bottom:env(safe-area-inset-bottom);display:flex;background:var(--dark);border-top:1px solid var(--dark-line)}
+.tabs button{flex:1;border:0;background:transparent;color:var(--dark-muted);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:12.5px;font-weight:700;position:relative}
+.tabs button[aria-current="page"]{color:#fff}
+.tabs button[aria-current="page"]::before{content:"";position:absolute;top:0;left:30%;right:30%;height:3px;background:#fff;border-radius:0 0 3px 3px}
+.ico{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.dot-alert{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--action);margin-left:5px;vertical-align:2px}
+
+/* 見出し・共通部品 */
+.view h2.ptitle{font-size:26px;line-height:1.25;font-weight:800;margin:6px 0 6px;letter-spacing:.01em}
+.lead{color:var(--muted);font-size:14px;margin-bottom:12px}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:var(--r-card);padding:16px;margin-bottom:14px}
+.card h3{font-size:17px;font-weight:800;margin-bottom:4px}
+.card .sub{color:var(--muted);font-size:13px;margin-bottom:10px}
+.btn{border:1px solid transparent;border-radius:var(--r-ctl);padding:10px 16px;min-height:44px;font-weight:800;font-size:15px;background:var(--brand);color:#fff}
+.btn:hover{background:#1a3224}
+.btn.sec{background:var(--paper);color:var(--brand);border-color:var(--brand)}
+.btn.sec:hover{background:var(--brand-soft)}
+.btn.sm{min-height:38px;padding:6px 12px;font-size:13.5px}
+.btn.red{background:var(--action)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.line{background:transparent;color:var(--muted);border-color:var(--line)}
+.chip{display:inline-flex;align-items:center;gap:4px;border-radius:var(--r-chip);padding:2px 10px;font-size:12.5px;font-weight:800;white-space:nowrap;border:1px solid transparent}
+.chip.ok{background:var(--accent-soft);color:var(--accent);border-color:var(--accent-line)}
+.chip.wait{background:var(--warning-soft);color:var(--warning);border-color:var(--warning-line)}
+.chip.ng{background:var(--danger-soft);color:var(--danger);border-color:var(--danger-line)}
+.chip.mute{background:var(--paper);color:var(--muted);border-color:var(--line)}
+.chip.blue{background:#fff;color:var(--today);border-color:var(--today)}
+.note{border-radius:var(--r-ctl);padding:10px 12px;font-size:13.5px;font-weight:700;margin:8px 0;border:1px solid}
+.note.ok{background:var(--accent-soft);color:var(--accent);border-color:var(--accent-line)}
+.note.err{background:var(--danger-soft);color:var(--danger);border-color:var(--danger-line)}
+.note.info{background:var(--soft);color:var(--ink);border-color:var(--line);font-weight:500}
+.back{border:0;background:none;color:var(--brand);font-weight:800;padding:8px 0;min-height:40px;font-size:14px}
+label.f{display:block;font-weight:800;font-size:13px;margin:10px 0 4px}
+.in{width:100%;border:1px solid var(--line-strong);border-radius:var(--r-ctl);background:var(--paper);padding:9px 10px;min-height:44px;font-size:16px}
+.row2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.row3{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 10px}
+.row3>:first-child{grid-column:1/-1}
+.row2>*,.row3>*{min-width:0}
+.in{min-width:0}
+.persona{display:flex;align-items:center;gap:10px;background:var(--brand-soft);border:1px solid var(--accent-line);border-radius:var(--r-card);padding:10px 12px;margin-bottom:12px;font-weight:700}
+.avatar{width:34px;height:34px;border-radius:50%;background:var(--brand);color:#fff;display:grid;place-items:center;font-weight:800;flex:none}
+
+/* 案件一覧 */
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13.5px;color:var(--muted);margin:4px 0 10px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{display:inline-block;width:20px;height:3px;border-radius:2px}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px 10px;align-items:center;margin-bottom:10px}
+.filter{border:1px solid var(--line);border-radius:var(--r-chip);padding:7px 14px;min-height:40px;background:var(--paper);color:var(--muted);font-weight:700;font-size:13.5px}
+.filter[aria-pressed="true"]{background:var(--danger-soft);color:var(--danger);border-color:var(--danger-line)}
+.count-h{font-weight:800;font-size:15px;margin:10px 0 2px}
+.plhead{position:relative;height:22px;padding:0 15px;font-size:12.5px;font-weight:700;color:var(--muted)}
+.plhead span{position:absolute;top:0;white-space:nowrap}
+.plhead .a{left:15px}
+.plhead .b{left:calc(15px + (100% - 30px) * .24)}
+.plhead .c{left:calc(15px + (100% - 30px) * .68);transform:translateX(-50%)}
+.plhead .d{left:calc(15px + (100% - 30px) * .84);transform:translateX(-50%)}
+.plhead .e{right:15px}
+.plist{background:var(--paper);border:1px solid var(--line);border-radius:var(--r-card);overflow:hidden}
+.prow{padding:12px 14px 6px;border-top:1px solid var(--line);cursor:pointer;position:relative}
+.prow:first-child{border-top:0}
+.prow:hover{background:#fbfaf6}
+.prow.alert::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--red)}
+.prow-h{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.pdate{font-weight:800;color:var(--muted);white-space:nowrap}
+.pname{font-weight:800;font-size:15.5px;flex:1;min-width:0}
+.pbadges{display:inline-flex;gap:6px;align-items:center;margin-left:auto}
+.unread{display:inline-grid;place-items:center;min-width:22px;height:22px;border-radius:50%;background:var(--accent);color:#fff;font-size:12.5px;font-weight:800}
+.empty{padding:22px;text-align:center;color:var(--muted)}
+
+/* 進行の線 */
+.pl{position:relative;height:42px;margin:4px 0 4px}
+.pl.box{height:68px}
+.pl .ln{position:absolute;height:0;border-top:3px solid var(--c,var(--pm-done));transform:translateY(-1.5px)}
+.pl .ln.dt{border-top:2px dotted var(--pm-todo)}
+.pl .vb{position:absolute;width:0;border-left:2px solid var(--pm-todo)}
+.pl .vb.dt{border-left-style:dotted}
+.pl .vb.sd{border-left-color:var(--pm-done)}
+.pl .bx{position:absolute}
+.pl .bx.dt{border:2px dotted var(--pm-todo)}
+.pl .bx.ok{border:3px solid var(--accent)}
+.pl .bx.dn{border:2px solid var(--pm-done)}
+.pl .pt{position:absolute;width:12px;height:12px;border-radius:50%;background:var(--c);transform:translate(-50%,-50%)}
+.pl .lb{position:absolute;transform:translateY(-50%);font-weight:800;font-size:13.5px;line-height:1.3;white-space:nowrap;background:var(--paper);padding:0 4px;color:var(--ct)}
+.c-red{--c:var(--red);--ct:var(--red)}
+.c-yellow{--c:var(--yellow);--ct:var(--warning)}
+.c-blue{--c:var(--today);--ct:var(--today)}
+.c-green{--c:var(--accent);--ct:var(--accent)}
+.c-grey{--c:var(--pm-done);--ct:var(--pm-done)}
+
+/* 詳細 */
+.dgrid{display:block}
+.ocard{border:1px solid var(--line);border-radius:var(--r-card);padding:12px;margin-bottom:8px;background:var(--paper)}
+.ocard .oh{display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap}
+.ocard .on{font-weight:800;font-size:15.5px}
+.ocard .od{color:var(--muted);font-size:13.5px}
+.ocard .oa{font-size:17px;font-weight:800}
+.acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.kind{border-top:1px solid var(--line);padding:12px 0}
+.kind:first-of-type{border-top:0}
+.kh{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.kh b{font-size:15.5px}
+.kmeta{color:var(--muted);font-size:13px}
+.uchips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.uchip{display:inline-flex;align-items:center;gap:4px;background:var(--brand-soft);border:1px solid var(--accent-line);border-radius:var(--r-ctl);padding:2px 4px 2px 10px;font-size:13px;font-weight:700;color:var(--brand)}
+.uchip.r{background:var(--warning-soft);border-color:var(--warning-line);color:var(--warning)}
+.uchip button{border:0;background:transparent;font-size:18px;line-height:1;width:28px;height:28px;color:inherit}
+.picker{margin-top:8px;border:1px solid var(--line);border-radius:var(--r-ctl);overflow:hidden}
+.picker button{display:flex;width:100%;justify-content:space-between;align-items:center;gap:8px;text-align:left;border:0;border-top:1px solid var(--line);background:var(--paper);padding:10px 12px;min-height:44px;font-size:14px;font-weight:700}
+.picker button:first-child{border-top:0}
+.picker button.free:hover{background:var(--accent-soft)}
+.picker button.busy{background:var(--soft);color:var(--muted)}
+.picker button.mine{background:var(--accent-soft);color:var(--accent)}
+.money{display:grid;grid-template-columns:1fr auto;gap:4px 12px;font-size:14.5px}
+.money .tot{font-weight:800;border-top:1px solid var(--line);padding-top:6px;margin-top:4px;font-size:16px}
+.money .num{text-align:right;font-variant-numeric:tabular-nums}
+.lockbox{border:1px dashed var(--line-strong);border-radius:var(--r-card);padding:12px;background:var(--soft);color:var(--muted);font-size:13.5px}
+.lockbox b{color:var(--ink)}
+
+/* 連絡 */
+.chat{background:var(--soft);border-radius:var(--r-card);padding:12px;display:flex;flex-direction:column;gap:10px;max-height:340px;overflow:auto}
+.msg{max-width:86%}
+.msg .who{font-size:12.5px;font-weight:700;color:var(--muted);margin-bottom:2px}
+.msg .bub{background:var(--paper);border-radius:12px;padding:8px 12px;font-size:15px;line-height:1.55;display:inline-block}
+.msg .tm{font-size:12px;color:var(--muted);margin-left:6px}
+.msg.me{align-self:flex-end;text-align:right}
+.msg.me .bub{background:var(--accent-soft);text-align:left}
+.chatform{display:flex;gap:8px;margin-top:10px}
+.chatform .in{flex:1}
+
+/* 機材・勤怠・表 */
+.ucard{display:grid;grid-template-columns:1fr auto;gap:2px 10px;padding:10px 0;border-top:1px solid var(--line);align-items:center}
+.ucard:first-of-type{border-top:0}
+.ucard .use{grid-column:1/-1;color:var(--muted);font-size:13px}
+.bigact{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
+.bigact .btn{min-width:140px;min-height:52px;font-size:17px}
+.recs .rec{display:grid;grid-template-columns:auto 1fr auto auto;gap:4px 12px;align-items:baseline;padding:11px 4px;border-top:1px solid var(--line)}
+.recs .rec:first-child{border-top:0}
+.rec .dy{font-weight:800}
+.rec .tm{color:var(--muted)}
+.rec .hr{font-weight:800;font-variant-numeric:tabular-nums}
+.rec .fr{color:var(--muted);font-size:13px;min-width:56px;text-align:right}
+table.rep{width:100%;border-collapse:collapse;font-size:14px;font-variant-numeric:tabular-nums}
+table.rep th,table.rep td{border:1px solid var(--line-strong);padding:7px 8px;text-align:left}
+table.rep th{background:var(--soft);font-weight:800;font-size:13px}
+table.rep td.r,table.rep th.r{text-align:right}
+table.rep tfoot td{font-weight:800;background:var(--brand-soft)}
+.tscroll{overflow-x:auto}
+
+/* 体験ガイド（スマホ: 下から / パソコン: 右） */
+.guide{position:fixed;left:0;right:0;bottom:calc(var(--tab-h) + env(safe-area-inset-bottom));z-index:45;background:var(--paper);border-top:1px solid var(--line-strong);border-radius:var(--r-sheet);box-shadow:0 -4px 14px rgba(28,26,21,.12)}
+.g-bar{width:100%;display:flex;align-items:center;gap:10px;border:0;background:transparent;padding:0 16px;min-height:52px;text-align:left;font-weight:800;font-size:14px;border-radius:var(--r-sheet)}
+.g-bar .gp{background:var(--brand);color:#fff;border-radius:var(--r-chip);padding:1px 10px;font-size:12.5px;white-space:nowrap}
+.g-bar .gc{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.g-bar .chev{width:10px;height:10px;border-right:2.5px solid var(--muted);border-top:2.5px solid var(--muted);transform:rotate(-45deg);margin-right:4px;flex:none}
+.guide.open .g-bar .chev{transform:rotate(135deg)}
+.g-body{display:none;padding:2px 16px 16px;max-height:60vh;overflow:auto}
+.guide.open .g-body{display:block}
+.g-body h2{font-size:17px;font-weight:800;margin-bottom:2px}
+.g-lead{color:var(--muted);font-size:13px;margin-bottom:8px}
+.gs{border-top:1px solid var(--line)}
+.gs>button.gt{width:100%;display:flex;align-items:center;gap:10px;text-align:left;border:0;background:transparent;padding:10px 0;min-height:46px;font-weight:800;font-size:14.5px}
+.gn{flex:none;width:26px;height:26px;border-radius:50%;border:2px solid var(--line-strong);display:grid;place-items:center;font-size:13px;font-weight:800;color:var(--muted);background:var(--paper)}
+.gs.done .gn{background:var(--accent);border-color:var(--accent);color:#fff}
+.gs.cur .gn{border-color:var(--brand);color:var(--brand);background:var(--brand-soft)}
+.gs.cur.done .gn{color:#fff;background:var(--accent)}
+.gs.done .gt{color:var(--accent)}
+.gs .gtx{padding:0 0 12px 36px;font-size:13.5px;color:var(--ink)}
+.gs .gtx .btn{margin-top:8px}
+.g-foot{margin-top:10px;font-size:13px;color:var(--muted)}
+.g-foot .done-msg{background:var(--accent-soft);border:1px solid var(--accent-line);color:var(--accent);border-radius:var(--r-ctl);padding:8px 10px;font-weight:700;margin-bottom:8px}
+.reset{margin-top:8px}
+
+@media (max-width:359px){
+  .brand-m .bt{display:none}
+  .seg button{padding:7px 9px;font-size:12.5px}
+}
+@media (min-width:520px){
+  .seg .long{display:inline}.seg .short{display:none}
+}
+@media (min-width:1180px){
+  .shell{display:grid;grid-template-columns:220px minmax(0,1fr) 310px;align-items:start}
+  .side{display:flex;flex-direction:column;position:sticky;top:var(--banner-h);height:calc(100vh - var(--banner-h));background:var(--dark);color:#fff;padding:18px 14px;gap:6px}
+  .side .brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:19px;margin:2px 6px 18px}
+  .side .brand .brand-badge{width:34px;height:34px;background:#fff;color:var(--dark);font-size:17px}
+  .side button.nav{display:flex;align-items:center;gap:12px;width:100%;border:0;background:transparent;color:var(--dark-muted);text-align:left;padding:12px;border-radius:var(--r-card);font-size:15px;font-weight:700}
+  .side button.nav:hover{background:#26332b}
+  .side button.nav[aria-current="page"]{background:var(--dark-raise);color:#fff}
+  .side .sidenote{margin-top:auto;border:1px solid var(--dark-line);border-radius:var(--r-card);padding:12px;color:var(--dark-muted);font-size:13px}
+  .side .sidenote b{display:block;color:#fff;margin-bottom:2px;font-size:14px}
+  .main{padding:0 32px 56px;max-width:none;margin:0;width:100%}
+  .view{max-width:960px}
+  .top{justify-content:flex-end;padding:14px 0 10px}
+  .brand-m{display:none}
+  .tabs{display:none}
+  .guide{position:sticky;top:var(--banner-h);bottom:auto;left:auto;right:auto;height:calc(100vh - var(--banner-h));overflow:auto;border-radius:0;border-top:0;border-left:1px solid var(--line);box-shadow:none;background:var(--paper);padding:18px 4px 18px 0}
+  .g-bar{display:none}
+  .g-body{display:block;max-height:none;padding:0 18px 20px}
+  .dgrid{display:grid;grid-template-columns:1fr 1fr;gap:0 16px;align-items:start}
+}
+</style>
+</head>
+<body>
+
+<div id="root">
+  <div class="demo-banner" role="note">体験用の見本です（データはすべて架空）</div>
+  <div class="shell">
+    <aside class="side" id="side" aria-label="メニュー"></aside>
+    <main class="main">
+      <header class="top" id="top"></header>
+      <div class="view" id="view"></div>
+    </main>
+    <aside class="guide" id="guide" aria-label="体験ガイド"></aside>
+  </div>
+  <nav class="tabs" id="tabs" aria-label="メニュー"></nav>
+</div>
+
+<script>
+(function(){
+'use strict';
+
+/* ===== 基本の道具 ===== */
+var TODAY='2026-10-15';
+var WD=['日','月','火','水','木','金','土'];
+function wd(iso){return WD[new Date(iso+'T00:00:00Z').getUTCDay()];}
+function md(iso){var a=iso.split('-');return (+a[1])+'/'+(+a[2])+'('+wd(iso)+')';}
+function dd(iso){return Math.round((Date.parse(iso+'T00:00:00Z')-Date.parse(TODAY+'T00:00:00Z'))/864e5);}
+function yen(n){return Number(n).toLocaleString('ja-JP')+'円';}
+function esc(s){return String(s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function pad(n){return (n<10?'0':'')+n;}
+function toMin(t){var a=t.split(':');return (+a[0])*60+(+a[1]);}
+function hm(min){return pad(Math.floor(min/60))+':'+pad(min%60);}
+function $(id){return document.getElementById(id);}
+
+/* ===== 見本データ（すべて架空） ===== */
+var KINDS=[
+  {id:'cam',name:'カメラ',units:['カメラ 1号機','カメラ 2号機','カメラ 3号機']},
+  {id:'sw',name:'配信スイッチャー',units:['スイッチャー 1号','スイッチャー 2号']},
+  {id:'mic',name:'ワイヤレスマイク',units:['マイク A','マイク B','マイク C','マイク D']},
+  {id:'lit',name:'照明セット',units:['照明 1組','照明 2組']}
+];
+var VENDORS=[
+  {id:'v1',name:'見本 花子',skill:'カメラ'},
+  {id:'v2',name:'試作 次郎',skill:'音声'},
+  {id:'v3',name:'仮名 三郎',skill:'照明'},
+  {id:'v4',name:'雛形 美咲',skill:'配信操作'}
+];
+var ROLES=['カメラ','音声','照明','配信操作'];
+var ME_VENDOR='v1';
+var ME_STAFF='山田 太郎';
+var STEPS=[
+  {t:'1画面で全体を見る',x:'案件ごとの線が「いまどこまで進んだか」です。赤い印は「いま対応が必要」。下の「赤い印の案件だけ見る」を押してみてください。',b:'案件の一覧を開く'},
+  {t:'アプリから外注に発注する',x:'「企業セミナー配信」を開き、外注スタッフ・日時・金額を入れて「発注する」。返事待ちになったら「承認したことにする」を押すと確定します。',b:'この案件を開く'},
+  {t:'機材の不足が自動で分かる',x:'「音楽ライブ収録」はカメラが1点足りません。同じ日に使用中のカメラを入れようとすると止まります。「機材を選ぶ」から試してください。',b:'この案件の機材を開く'},
+  {t:'見せる範囲を切り替える',x:'画面上の切り替えで「外注で見る」を押します。自分の案件と連絡だけが見え、他の金額や収支は見えません。',b:'外注として見る'},
+  {t:'勤怠をつける',x:'「出勤」「退勤」を押して記録し、「月末の表を作る」を押すと、社労士さんに出す形の表がその場でできます。',b:'勤怠を開く'}
+];
+
+function seedProjects(){
+  return [
+    {id:'p1',date:'2026-10-12',name:'〇〇放送 スポーツ中継',place:'〇〇スタジアム',prov:false,rev:320000,needPeople:1,
+      orders:[{id:'o1',v:'v1',role:'カメラ',date:'2026-10-12',s:'10:00',e:'18:00',amt:36000,st:'ok'}],eq:[],chat:[]},
+    {id:'p2',date:'2026-10-15',name:'□□工業 展示会ブース配信',place:'□□展示ホール',prov:false,rev:280000,needPeople:2,
+      orders:[{id:'o2',v:'v1',role:'カメラ',date:'2026-10-15',s:'08:00',e:'16:00',amt:30000,st:'ok'},
+              {id:'o3',v:'v4',role:'配信操作',date:'2026-10-15',s:'08:00',e:'16:00',amt:26000,st:'ok'}],
+      eq:[{k:'cam',need:2,units:['cam0','cam1'],rental:0},{k:'sw',need:1,units:['sw0'],rental:0}],chat:[]},
+    {id:'p3',date:'2026-10-17',name:'〇〇放送 音楽ライブ収録',place:'〇〇文化会館',prov:false,rev:450000,needPeople:2,
+      orders:[{id:'o4',v:'v1',role:'カメラ',date:'2026-10-17',s:'12:00',e:'20:00',amt:38000,st:'ok'},
+              {id:'o5',v:'v2',role:'音声',date:'2026-10-17',s:'12:00',e:'20:00',amt:32000,st:'ok'}],
+      eq:[{k:'cam',need:3,units:['cam0','cam1'],rental:0},{k:'mic',need:2,units:['mic0','mic1'],rental:0},{k:'sw',need:1,units:['sw0'],rental:0}],
+      chat:[{from:'staff',name:ME_STAFF,t:'10:02',txt:'10/17の集合は12:00です。機材は事務所から積んで行きます。'},
+            {from:'v1',name:'見本 花子',t:'10:15',txt:'了解です。会場の駐車場は使えますか？'}]},
+    {id:'p4',date:'2026-10-17',name:'◇◇商店街 秋祭り中継',place:'◇◇商店街 広場',prov:false,rev:190000,needPeople:1,
+      orders:[{id:'o6',v:'v3',role:'照明',date:'2026-10-17',s:'14:00',e:'20:00',amt:25000,st:'ok'}],
+      eq:[{k:'cam',need:1,units:['cam2'],rental:0},{k:'lit',need:1,units:['lit0'],rental:0}],chat:[]},
+    {id:'p5',date:'2026-10-20',name:'△△食品 新製品発表会',place:'△△食品 本社ホール',prov:true,rev:360000,needPeople:2,
+      orders:[],eq:[{k:'cam',need:2,units:[],rental:0},{k:'lit',need:1,units:[],rental:0}],chat:[]},
+    {id:'p6',date:'2026-10-22',name:'□□工業 企業セミナー配信',place:'□□工業 会議室',prov:false,rev:300000,needPeople:2,
+      orders:[{id:'o7',v:'v2',role:'音声',date:'2026-10-22',s:'09:00',e:'17:00',amt:28000,st:'pending'}],
+      eq:[{k:'cam',need:1,units:[],rental:0},{k:'sw',need:1,units:[],rental:0},{k:'mic',need:2,units:[],rental:0}],
+      chat:[{from:'v2',name:'試作 次郎',t:'09:40',txt:'音声の機材は、事務所で受け取れますか？'}]},
+    {id:'p7',date:'2026-10-28',name:'△△食品 記者発表会',place:'△△食品 本社ホール',prov:false,rev:260000,needPeople:1,
+      orders:[{id:'o8',v:'v4',role:'配信操作',date:'2026-10-28',s:'13:00',e:'18:00',amt:24000,st:'ok'}],
+      eq:[{k:'cam',need:2,units:['cam0','cam1'],rental:0},{k:'lit',need:1,units:['lit0'],rental:0}],chat:[]},
+    {id:'p8',date:'2026-11-03',name:'〇〇放送 秋の特番 打合せ',place:'〇〇放送 会議室',prov:true,rev:400000,needPeople:2,
+      orders:[],eq:[{k:'cam',need:2,units:[],rental:0}],chat:[]}
+  ];
+}
+function initState(){
+  return {
+    viewer:'staff', page:'list', openId:null, filterRed:false,
+    projects:seedProjects(), unread:{p3:1,p6:1},
+    form:{}, notes:{}, picker:null, resetAsk:false,
+    gcur:0, gdone:{}, gopen:false,
+    att:{recs:[
+      {iso:'2026-10-01',i:'10:00',o:'18:30',fare:480},{iso:'2026-10-02',i:'09:30',o:'18:00',fare:480},
+      {iso:'2026-10-05',i:'10:00',o:'19:00',fare:480},{iso:'2026-10-06',i:'10:00',o:'17:30',fare:0},
+      {iso:'2026-10-07',i:'10:00',o:'18:00',fare:480},{iso:'2026-10-08',i:'13:00',o:'20:00',fare:480},
+      {iso:'2026-10-09',i:'10:00',o:'18:00',fare:480},{iso:'2026-10-13',i:'10:00',o:'19:30',fare:480},
+      {iso:'2026-10-14',i:'10:00',o:'18:00',fare:480}
+    ],todayIn:null,outT:'',fare:'480',report:false}
+  };
+}
+var S=initState();
+
+/* ===== 計算 ===== */
+function kind(id){for(var i=0;i<KINDS.length;i++)if(KINDS[i].id===id)return KINDS[i];}
+function unitName(uid){var k=kind(uid.replace(/\d+$/,'')),n=+uid.replace(/^\D+/,'');return k.units[n];}
+function proj(id){for(var i=0;i<S.projects.length;i++)if(S.projects[i].id===id)return S.projects[i];}
+function vend(id){for(var i=0;i<VENDORS.length;i++)if(VENDORS[i].id===id)return VENDORS[i];}
+function usedBy(uid,date,exceptId){
+  for(var i=0;i<S.projects.length;i++){var p=S.projects[i];
+    if(p.id===exceptId||p.date!==date)continue;
+    for(var j=0;j<p.eq.length;j++)if(p.eq[j].units.indexOf(uid)>=0)return p;}
+  return null;
+}
+function peopleSt(p){
+  var tot=p.needPeople,conf=0,pend=0;
+  p.orders.forEach(function(o){if(o.st==='ok')conf++;else pend++;});
+  var r=tot?conf/tot:1;
+  if(conf>=tot)return {c:'green',lab:'人 '+conf+'/'+tot,r:1,ok:true};
+  if(pend>0)return {c:'yellow',lab:'人 '+conf+'/'+tot+'・承認待ち'+pend,r:r,ok:false};
+  return {c:'blue',lab:'人 '+conf+'/'+tot+'・未発注',r:r,ok:false};
+}
+function eqCalc(p){
+  var need=0,asg=0,rent=0,short=0;
+  p.eq.forEach(function(e){need+=e.need;asg+=e.units.length;rent+=e.rental;short+=Math.max(0,e.need-e.units.length-e.rental);});
+  return {need:need,asg:asg,rent:rent,short:short};
+}
+function eqSt(p){
+  var c=eqCalc(p);
+  if(!c.need)return {c:'green',lab:'機材 不要',r:1,ok:true,c0:c};
+  if(c.short===0&&c.rent===0)return {c:'green',lab:'機材 OK',r:1,ok:true,c0:c};
+  if(c.short===0)return {c:'yellow',lab:'機材 レンタル依頼済',r:1,ok:false,c0:c};
+  if(c.asg+c.rent===0)return {c:'blue',lab:'機材 未割当',r:0,ok:false,c0:c};
+  return {c:'red',lab:'機材 不足'+c.short+'点',r:(c.asg+c.rent)/c.need,ok:false,c0:c};
+}
+function stage(p){
+  var d=dd(p.date);
+  if(d<0)return 'done';
+  if(p.prov)return 'meeting';
+  if(d===0)return 'live';
+  return (peopleSt(p).ok&&eqSt(p).ok)?'arranged':'confirmed';
+}
+function meetingColor(p){return dd(p.date)<=7?'red':'blue';}
+function alertOf(p){
+  var s=stage(p);
+  if(s==='meeting')return meetingColor(p)==='red';
+  if(s==='confirmed')return eqSt(p).c==='red'||peopleSt(p).c==='red';
+  return false;
+}
+function sorted(){
+  return S.projects.slice().sort(function(a,b){
+    var da=dd(a.date)<0,db=dd(b.date)<0;
+    if(da!==db)return da?1:-1;
+    return a.date<b.date?-1:a.date>b.date?1:(a.id<b.id?-1:1);
+  });
+}
+function myOrder(p){for(var i=0;i<p.orders.length;i++)if(p.orders[i].v===ME_VENDOR)return p.orders[i];return null;}
+function nowHM(){var d=new Date();return pad(d.getHours())+':'+pad(d.getMinutes());}
+
+/* ===== 進行の線 ===== */
+function ln(y,x1,x2,c,dt){return '<i class="ln'+(dt?' dt':'')+(c?' c-'+c:'')+'" style="top:'+y+'px;left:'+x1+'%;width:'+Math.max(0,x2-x1)+'%"></i>';}
+function pt(y,x,c){return '<i class="pt c-'+c+'" style="top:'+y+'px;left:'+x+'%"></i>';}
+function lb(y,x,c,t,right){return '<b class="lb c-'+c+'" style="top:'+y+'px;'+(right?'right:calc('+(100-x)+'% + 14px)':'left:calc('+x+'% + 14px)')+'">'+esc(t)+'</b>';}
+function vb(x,y1,y2,cls){return '<i class="vb '+(cls||'')+'" style="left:'+x+'%;top:'+y1+'px;height:'+(y2-y1)+'px"></i>';}
+function bx(cls,top,h){return '<i class="bx '+cls+'" style="left:24%;width:44%;top:'+top+'px;height:'+h+'px"></i>';}
+function track(p){
+  var st=stage(p),h='';
+  if(st==='meeting'){
+    var c=meetingColor(p),y=21;
+    return '<div class="pl">'+bx('dt',5,32)+ln(y,0,20.5,c)+ln(y,68,100,null,true)+pt(y,21,c)+lb(y,21,c,'打合せ中')+'</div>';
+  }
+  if(st==='arranged'||st==='live'){
+    var y2=21,d=dd(p.date);
+    h=ln(y2,0,24,'grey')+bx('ok',5,32);
+    if(st==='arranged'){
+      h+=ln(y2,68,100,null,true)+pt(y2,68,'green')+lb(y2,68,'green','あと'+d+'日');
+    }else{
+      h+=ln(y2,68,84,'grey')+ln(y2,84,92,'blue')+ln(y2,92,100,null,true)+pt(y2,92,'blue')+lb(y2,92,'blue','本番中',true);
+    }
+    return '<div class="pl">'+h+'</div>';
+  }
+  if(st==='done'){
+    var y3=21;
+    return '<div class="pl">'+bx('dn',5,32)+ln(y3,0,100,'grey')+pt(y3,100,'grey')+lb(y3,100,'grey','終了',true)+'</div>';
+  }
+  /* 確定（手配の途中）: 上の線=人、下の線=機材 */
+  var mid=34,top=15,bot=53,ps=peopleSt(p),es=eqSt(p);
+  h=ln(mid,0,24,'grey')+vb(24,top,bot,'sd')+vb(68,top,bot,'dt')+ln(mid,68,100,null,true);
+  [[top,ps],[bot,es]].forEach(function(a){
+    var y=a[0],s=a[1];
+    var end=s.ok?68:Math.min(68,24+7+(44-7)*s.r);
+    h+=ln(y,24,end,s.c)+(end<68?ln(y,end,68,null,true):'')+pt(y,end,s.c)+lb(y,end,s.c,s.lab);
+  });
+  return '<div class="pl box">'+h+'</div>';
+}
+function plHead(){return '<div class="plhead" aria-hidden="true"><span class="a">打合せ</span><span class="b">確定</span><span class="c">手配完了</span><span class="d">本番</span><span class="e">終了</span></div>';}
+function badge(p){
+  if(stage(p)==='done')return '<span class="chip mute">終了</span>';
+  return p.prov?'<span class="chip mute">仮</span>':'<span class="chip ok">確定</span>';
+}
+
+/* ===== 画面: 社員 ===== */
+function listView(){
+  var all=sorted(),nAlert=all.filter(alertOf).length;
+  var rows=all.filter(function(p){return !S.filterRed||alertOf(p);});
+  var h='<h2 class="ptitle">案件管理</h2>'+
+   '<p class="lead">案件ごとの線が、いまどこまで進んだかを表します。赤い印は「いま対応が要る」ものです。案件をタップすると開きます。</p>'+
+   '<div class="legend"><span><i style="background:var(--today)"></i>こちら</span><span><i style="background:var(--yellow)"></i>返事待ち</span><span><i style="background:var(--red)"></i>要対応</span><span><i style="background:var(--accent)"></i>そろった</span></div>'+
+   '<div class="toolbar"><button class="filter" data-act="filter" aria-pressed="'+S.filterRed+'">赤い印の案件だけ見る（'+nAlert+'件）</button></div>'+
+   '<div class="count-h">イベント '+rows.length+'</div>'+plHead();
+  if(!rows.length)h+='<div class="plist"><div class="empty">要対応の案件はありません。</div></div>';
+  else h+='<div class="plist">'+rows.map(function(p){
+    var u=S.unread[p.id]?'<span class="unread" aria-label="未読の連絡 '+S.unread[p.id]+'件">'+S.unread[p.id]+'</span>':'';
+    return '<div class="prow'+(alertOf(p)?' alert':'')+'" role="button" tabindex="0" data-act="open" data-id="'+p.id+'">'+
+      '<div class="prow-h"><span class="pdate">'+md(p.date)+'</span><span class="pname">'+esc(p.name)+'</span><span class="pbadges">'+badge(p)+u+'</span></div>'+track(p)+'</div>';
+  }).join('')+'</div>';
+  return h;
+}
+function noteHTML(key){var n=S.notes[key];return n?'<div class="note '+n.type+'" role="status">'+esc(n.t)+'</div>':'';}
+function ordersCard(p){
+  var h='<section class="card" id="sec-order"><h3>外注スタッフの手配</h3><p class="sub">必要な人数: '+p.needPeople+'人（確定 '+p.orders.filter(function(o){return o.st==='ok';}).length+'人）</p>';
+  h+=noteHTML('order');
+  if(p.prov)return h+'<div class="note info">仮の案件です。先に上の「確定にする」を押すと、外注への発注ができます。</div></section>';
+  h+=p.orders.map(function(o){
+    var v=vend(o.v);
+    return '<div class="ocard"><div class="oh"><span class="on">'+esc(v.name)+'<span class="od">　'+esc(o.role)+'</span></span>'+
+      (o.st==='ok'?'<span class="chip ok">確定</span>':'<span class="chip wait">返事待ち</span>')+'</div>'+
+      '<div class="od">'+md(o.date)+' '+o.s+'〜'+o.e+'</div><div class="oa">'+yen(o.amt)+'</div>'+
+      (o.st==='pending'?'<div class="acts"><button class="btn sm" data-act="approve" data-id="'+o.id+'">外注が承認したことにする（体験用）</button><button class="btn sm line" data-act="cancelorder" data-id="'+o.id+'">取り消す</button></div>':'')+
+      '</div>';
+  }).join('');
+  if(!p.orders.length)h+='<div class="note info">まだ発注していません。</div>';
+  var f=S.form,avail=VENDORS.filter(function(v){return !p.orders.some(function(o){return o.v===v.id;});});
+  if(!avail.length)return h+'</section>';
+  if(!f.v||!avail.some(function(v){return v.id===f.v;})){f.v=avail[0].id;f.role=avail[0].skill;}
+  f.date=f.date||p.date;f.s=f.s||'10:00';f.e=f.e||'18:00';f.role=f.role||ROLES[0];
+  h+='<form id="orderform" novalidate><label class="f" for="f-v">外注スタッフ</label><select class="in" id="f-v" data-f="v">'+
+    avail.map(function(v){return '<option value="'+v.id+'"'+(f.v===v.id?' selected':'')+'>'+esc(v.name)+'（'+v.skill+'）</option>';}).join('')+'</select>'+
+    '<label class="f" for="f-role">役割</label><select class="in" id="f-role" data-f="role">'+ROLES.map(function(r){return '<option'+(f.role===r?' selected':'')+'>'+r+'</option>';}).join('')+'</select>'+
+    '<div class="row3"><div><label class="f" for="f-date">日付</label><input class="in" type="date" id="f-date" data-f="date" value="'+esc(f.date)+'"></div>'+
+    '<div><label class="f" for="f-s">開始</label><input class="in" type="time" id="f-s" data-f="s" value="'+esc(f.s)+'"></div>'+
+    '<div><label class="f" for="f-e">終了</label><input class="in" type="time" id="f-e" data-f="e" value="'+esc(f.e)+'"></div></div>'+
+    '<label class="f" for="f-amt">金額（円）</label><input class="in" type="number" inputmode="numeric" min="0" step="1000" id="f-amt" data-f="amt" placeholder="例 35000" value="'+esc(f.amt||'')+'">'+
+    '<div class="acts"><button class="btn" type="submit" data-act="order">発注する</button></div></form>';
+  return h+'</section>';
+}
+function eqCard(p){
+  var h='<section class="card" id="sec-eq"><h3>機材</h3><p class="sub">在庫と、同じ日の他の案件への割り当てから、不足を自動で数えます。</p>'+noteHTML('eq');
+  if(p.prov)return h+'<div class="note info">仮の案件です。確定にすると、機材の割り当てができます。</div></section>';
+  if(!p.eq.length)h+='<div class="note info">この案件で必要な機材は、まだ入っていません。</div>';
+  p.eq.forEach(function(e){
+    var k=kind(e.k),short=Math.max(0,e.need-e.units.length-e.rental);
+    var free=k.units.map(function(u,i){return k.id+i;}).filter(function(u){return !usedBy(u,p.date,p.id)&&e.units.indexOf(u)<0;});
+    var chip=short>0?'<span class="chip ng">不足'+short+'点</span>':(e.rental?'<span class="chip wait">レンタル依頼済</span>':'<span class="chip ok">そろった</span>');
+    h+='<div class="kind"><div class="kh"><b>'+esc(k.name)+'</b>'+chip+'</div>'+
+      '<div class="kmeta">必要 '+e.need+'点・割当 '+e.units.length+'点'+(e.rental?'・レンタル '+e.rental+'点':'')+'・この日の空き '+free.length+'点</div>';
+    if(e.units.length||e.rental){
+      h+='<div class="uchips">'+e.units.map(function(u){return '<span class="uchip">'+esc(unitName(u))+'<button data-act="unassign" data-id="'+p.id+'" data-k="'+e.k+'" data-u="'+u+'" aria-label="'+esc(unitName(u))+'を外す">×</button></span>';}).join('')+
+        (e.rental?'<span class="uchip r">レンタル依頼 '+e.rental+'点（返事待ち）<button data-act="unrent" data-k="'+e.k+'" aria-label="レンタル依頼を取り消す">×</button></span>':'')+'</div>';
+    }
+    h+='<div class="acts">'+(short>0?'<button class="btn sm sec" data-act="auto" data-k="'+e.k+'">空きを自動で入れる</button>':'')+
+      '<button class="btn sm sec" data-act="picker" data-k="'+e.k+'" aria-expanded="'+(S.picker===e.k)+'">機材を選ぶ</button>'+
+      (short>0&&!free.length?'<button class="btn sm sec" data-act="rent" data-k="'+e.k+'">レンタルを依頼する</button>':'')+'</div>';
+    if(S.picker===e.k){
+      h+='<div class="picker">'+k.units.map(function(u,i){
+        var uid=k.id+i,by=usedBy(uid,p.date,p.id);
+        if(e.units.indexOf(uid)>=0)return '<button class="mine" data-act="pick" data-u="'+uid+'" data-k="'+e.k+'"><span>'+esc(u)+'</span><span>この案件に割当済</span></button>';
+        if(by)return '<button class="busy" data-act="pick" data-u="'+uid+'" data-k="'+e.k+'"><span>'+esc(u)+'</span><span>使用中: '+esc(by.name)+'</span></button>';
+        return '<button class="free" data-act="pick" data-u="'+uid+'" data-k="'+e.k+'"><span>'+esc(u)+'</span><span>空き（入れる）</span></button>';
+      }).join('')+'</div>';
+    }
+    h+='</div>';
+  });
+  h+='<form id="needform" class="kind" novalidate><div class="kh"><b>必要な機材を足す</b></div><div class="row2"><div><label class="f" for="n-k">機材</label><select class="in" id="n-k" data-f="nk">'+
+    KINDS.map(function(k){return '<option value="'+k.id+'"'+((S.form.nk||'cam')===k.id?' selected':'')+'>'+esc(k.name)+'</option>';}).join('')+'</select></div>'+
+    '<div><label class="f" for="n-n">点数</label><select class="in" id="n-n" data-f="nn">'+[1,2,3,4].map(function(n){return '<option'+((S.form.nn||'1')==n?' selected':'')+'>'+n+'</option>';}).join('')+'</select></div></div>'+
+    '<div class="acts"><button class="btn sm sec" type="submit" data-act="addneed">必要に足す</button></div></form></section>';
+  return h;
+}
+function moneyCard(p){
+  var out=0;p.orders.forEach(function(o){out+=o.amt;});
+  var lines=p.orders.map(function(o){return '<span>外注 '+esc(vend(o.v).name)+'</span><span class="num">'+yen(o.amt)+'</span>';}).join('');
+  var gm=p.rev-out;
+  return '<section class="card"><h3>収支（社員だけに表示）</h3><p class="sub">外注スタッフの画面には出ません。</p><div class="money">'+
+    '<span>見積（'+(p.prov?'仮':'確定')+'）</span><span class="num">'+yen(p.rev)+'</span>'+lines+
+    '<span class="tot">見込みの差額</span><span class="num tot">'+yen(gm)+'</span></div></section>';
+}
+function chatCard(p,as){
+  var me=as==='staff'?'staff':ME_VENDOR;
+  var h='<section class="card" id="sec-chat"><h3>案件連絡</h3><p class="sub">この案件の関係者だけが見られる連絡欄です。</p><div class="chat" id="chatbox">';
+  if(!p.chat.length)h+='<div class="kmeta">まだ連絡はありません。</div>';
+  h+=p.chat.map(function(m){
+    var mine=m.from===me;
+    return '<div class="msg'+(mine?' me':'')+'">'+(mine?'':'<div class="who">'+esc(m.name)+'</div>')+'<span class="bub">'+esc(m.txt)+'</span><span class="tm">'+m.t+'</span></div>';
+  }).join('')+'</div>'+
+  '<form class="chatform" id="chatform" novalidate><input class="in" id="chatin" data-f="chat" placeholder="メッセージを入力" aria-label="メッセージ" value="'+esc(S.form.chat||'')+'"><button class="btn" type="submit" data-act="chatsend">送信</button></form></section>';
+  return h;
+}
+function detailView(p){
+  var h='<button class="back" data-act="back">← 案件一覧にもどる</button>'+
+    '<h2 class="ptitle">'+esc(p.name)+'</h2>'+
+    '<p class="lead">'+md(p.date)+'　'+esc(p.place)+'　'+badge(p)+'</p>'+
+    '<div class="card">'+plHead()+track(p)+'</div>';
+  if(p.prov)h+='<div class="card"><h3>この案件はまだ「仮」です</h3><p class="sub">打合せが終わったら確定にします。確定にすると、外注への発注と機材の割り当てに進めます。</p>'+noteHTML('prov')+'<button class="btn" data-act="confirmproj">確定にする</button></div>';
+  h+='<div class="dgrid"><div>'+ordersCard(p)+moneyCard(p)+'</div><div>'+eqCard(p)+chatCard(p,'staff')+'</div></div>';
+  return h;
+}
+function kizaiView(){
+  var h='<h2 class="ptitle">機材</h2><p class="lead">どの機材が、いつ、どの案件で使われているかが一覧で分かります。</p>';
+  var sh=S.projects.filter(function(p){return !p.prov&&stage(p)!=='done'&&eqSt(p).c0.short>0;});
+  h+='<div class="card"><h3>不足がある案件</h3>';
+  if(!sh.length)h+='<div class="note ok">不足している案件はありません。</div>';
+  else sh.forEach(function(p){h+='<div class="ocard"><div class="oh"><span class="on">'+md(p.date)+' '+esc(p.name)+'</span><span class="chip ng">不足'+eqSt(p).c0.short+'点</span></div><div class="acts"><button class="btn sm sec" data-act="open" data-id="'+p.id+'" data-to="eq">この案件の機材を開く</button></div></div>';});
+  h+='</div>';
+  KINDS.forEach(function(k){
+    h+='<div class="card"><h3>'+esc(k.name)+'<span class="kmeta">　在庫 '+k.units.length+'点</span></h3>';
+    k.units.forEach(function(u,i){
+      var uid=k.id+i,uses=[];
+      S.projects.forEach(function(p){if(dd(p.date)>=0&&p.eq.some(function(e){return e.units.indexOf(uid)>=0;}))uses.push(p);});
+      uses.sort(function(a,b){return a.date<b.date?-1:1;});
+      h+='<div class="ucard"><b>'+esc(u)+'</b>'+(uses.length?'<span class="chip wait">予定 '+uses.length+'件</span>':'<span class="chip ok">空き</span>')+
+        '<div class="use">'+(uses.length?uses.map(function(p){return md(p.date)+' '+esc(p.name);}).join(' ／ '):'今後の予定はありません')+'</div></div>';
+    });
+    h+='</div>';
+  });
+  return h;
+}
+function fmtRec(r){
+  var d=toMin(r.o)-toMin(r.i);
+  return {d:d,hm:hm(Math.max(0,d))};
+}
+function kintaiView(){
+  var a=S.att,recs=a.recs.slice().sort(function(x,y){return x.iso<y.iso?-1:1;});
+  var totMin=0,fare=0;recs.forEach(function(r){totMin+=fmtRec(r).d;fare+=r.fare;});
+  var tdone=recs.filter(function(r){return r.iso===TODAY;})[0];
+  var h='<h2 class="ptitle">勤怠</h2><p class="lead">本日 '+md(TODAY)+'。出勤・退勤のボタンを押すだけで記録されます。</p><div class="card"><h3>本日の打刻</h3>';
+  if(!a.todayIn&&!tdone){
+    h+='<p class="sub">まだ出勤していません。</p><div class="bigact"><button class="btn" data-act="punchin">出勤</button></div>';
+  }else if(a.todayIn&&!tdone){
+    h+='<p class="sub">出勤 '+a.todayIn+'（勤務中）</p><div class="bigact"><div style="flex:1;min-width:220px"><div class="row2"><div><label class="f" for="f-out">退勤の時刻（体験用に直せます）</label><input class="in" type="time" id="f-out" data-f="outT" value="'+esc(a.outT)+'"></div><div><label class="f" for="f-fare">今日の交通費（円）</label><input class="in" type="number" inputmode="numeric" id="f-fare" data-f="fare" value="'+esc(a.fare)+'"></div></div><button class="btn red" data-act="punchout">退勤</button></div>';
+  }else{
+    h+='<div class="note ok">本日の記録ができました。'+tdone.i+'〜'+tdone.o+'（'+fmtRec(tdone).hm+'）</div><div class="acts"><button class="btn sm line" data-act="punchreset">本日の打刻をやり直す</button></div>';
+  }
+  h+='</div><div class="card"><h3>2026年10月</h3><p class="sub">出勤 '+(recs.length+(a.todayIn&&!tdone?1:0))+'日・合計 '+hm(totMin)+'・交通費 '+yen(fare)+'</p><div class="recs">';
+  recs.slice().reverse().forEach(function(r){var f=fmtRec(r);h+='<div class="rec"><span class="dy">'+(+r.iso.slice(8))+'日('+wd(r.iso)+')</span><span class="tm">'+r.i+'〜'+r.o+'</span><span class="hr">'+f.hm+'</span><span class="fr">'+(r.fare?yen(r.fare):'—')+'</span></div>';});
+  if(a.todayIn&&!tdone)h+='<div class="rec"><span class="dy">15日(木)</span><span class="tm">'+a.todayIn+'〜勤務中</span><span class="hr">—</span><span class="fr"></span></div>';
+  h+='</div><div class="acts"><button class="btn" data-act="report">月末の表を作る</button></div></div>';
+  if(a.report){
+    h+='<div class="card" id="report"><h3>勤務表（社労士さんに出す形）</h3><p class="sub">2026年10月　氏名: '+ME_STAFF+'</p><div class="tscroll"><table class="rep"><thead><tr><th>日付</th><th>出勤</th><th>退勤</th><th class="r">時間</th><th class="r">交通費</th></tr></thead><tbody>'+
+      recs.map(function(r){return '<tr><td>10/'+(+r.iso.slice(8))+'('+wd(r.iso)+')</td><td>'+r.i+'</td><td>'+r.o+'</td><td class="r">'+fmtRec(r).hm+'</td><td class="r">'+r.fare.toLocaleString('ja-JP')+'円</td></tr>';}).join('')+
+      '</tbody><tfoot><tr><td colspan="3">合計（出勤 '+recs.length+'日）</td><td class="r">'+hm(totMin)+'</td><td class="r">'+fare.toLocaleString('ja-JP')+'円</td></tr></tfoot></table></div><div class="acts"><button class="btn sm line" data-act="reportclose">表を閉じる</button></div></div>';
+  }
+  return h;
+}
+
+/* ===== 画面: 外注スタッフ ===== */
+function vProjects(){return sorted().filter(function(p){return myOrder(p);});}
+function vlistView(){
+  var list=vProjects();
+  var h='<h2 class="ptitle">自分の案件</h2><div class="persona"><span class="avatar">見</span><span>見本 花子さん（外注スタッフ）として表示中</span></div>'+
+   '<p class="lead">ここには、あなたに依頼された案件と、その連絡だけが表示されます。</p>';
+  if(!list.length)h+='<div class="card"><div class="empty">いま依頼されている案件はありません。</div></div>';
+  list.forEach(function(p){
+    var o=myOrder(p);
+    h+='<div class="card prow" style="padding:14px" role="button" tabindex="0" data-act="open" data-id="'+p.id+'"><div class="prow-h"><span class="pdate">'+md(p.date)+'</span><span class="pname">'+esc(p.name)+'</span>'+
+      '<span class="pbadges">'+(dd(p.date)<0?'<span class="chip mute">終了</span>':o.st==='ok'?'<span class="chip ok">確定</span>':'<span class="chip wait">返事待ち</span>')+'</span></div>'+
+      '<div class="od" style="color:var(--muted);margin-top:4px">'+esc(o.role)+'　'+o.s+'〜'+o.e+'　<b style="color:var(--ink)">'+yen(o.amt)+'</b></div>'+
+      (o.st==='pending'?'<div class="note info" style="margin-bottom:0">お返事をお待ちしています。開いて「引き受ける」を押してください。</div>':'')+'</div>';
+  });
+  h+='<div class="lockbox"><b>この画面で見えないもの</b><br>他の案件・他の外注スタッフの金額・売上や収支・機材の在庫。これらは社員の画面だけに表示されます。</div>';
+  return h;
+}
+function vdetailView(p){
+  var o=myOrder(p);
+  var h='<button class="back" data-act="back">← 自分の案件にもどる</button><h2 class="ptitle">'+esc(p.name)+'</h2>'+
+    '<div class="card"><h3>あなたへの依頼内容</h3>'+noteHTML('vorder')+
+    '<div class="money" style="margin-top:8px"><span>日時</span><span class="num">'+md(o.date)+' '+o.s+'〜'+o.e+'</span><span>場所</span><span class="num">'+esc(p.place)+'</span><span>役割</span><span class="num">'+esc(o.role)+'</span><span>金額</span><span class="num"><b>'+yen(o.amt)+'</b></span><span>状態</span><span class="num">'+(o.st==='ok'?'<span class="chip ok">確定</span>':'<span class="chip wait">返事待ち</span>')+'</span></div>'+
+    (o.st==='pending'?'<div class="acts"><button class="btn" data-act="vaccept" data-id="'+o.id+'">引き受ける</button></div>':'<p class="sub" style="margin-top:8px">発注の内容はそのまま残るので、請求書の金額と日付を取り違えません。</p>')+'</div>'+
+    chatCard(p,'vendor')+
+    '<div class="lockbox"><b>この画面で見えないもの</b><br>この案件の売上・収支、他の外注スタッフの金額、機材の状況。</div>';
+  return h;
+}
+function vinvoiceView(){
+  var rows=[],tot=0;
+  sorted().slice().sort(function(a,b){return a.date<b.date?-1:1;}).forEach(function(p){var o=myOrder(p);if(o&&o.st==='ok'){rows.push([p,o]);tot+=o.amt;}});
+  var h='<h2 class="ptitle">請求書の材料</h2><div class="persona"><span class="avatar">見</span><span>見本 花子さん（外注スタッフ）として表示中</span></div><p class="lead">確定した依頼の日付・案件・金額が、発注の記録のまま並びます。そのまま請求書に写せます。</p>'+
+   '<div class="card"><div class="tscroll"><table class="rep"><thead><tr><th>日付</th><th>案件</th><th class="r">金額</th></tr></thead><tbody>'+
+   rows.map(function(r){return '<tr><td>'+md(r[0].date)+'</td><td>'+esc(r[0].name)+'<br><span class="kmeta">'+esc(r[1].role)+' '+r[1].s+'〜'+r[1].e+'</span></td><td class="r">'+r[1].amt.toLocaleString('ja-JP')+'円</td></tr>';}).join('')+
+   '</tbody><tfoot><tr><td colspan="2">合計（'+rows.length+'件）</td><td class="r">'+tot.toLocaleString('ja-JP')+'円</td></tr></tfoot></table></div></div>'+
+   '<p class="kmeta">返事待ちの依頼は、確定するとここに加わります。</p>';
+  return h;
+}
+
+/* ===== 枠（上・横・下・ガイド） ===== */
+var ICON={
+  list:'<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3.5" width="14" height="17" rx="2"/><path d="M9 8h6M9 12h6M9 16h4"/></svg>',
+  box:'<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="8" width="17" height="11" rx="2"/><path d="M9 8V6a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg>',
+  clock:'<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>',
+  doc:'<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3.5h7l4 4V20a.5.5 0 0 1-.5.5h-10A.5.5 0 0 1 7 20z"/><path d="M14 3.5V8h4M10 13h5M10 16.5h5"/></svg>'
+};
+function navItems(){
+  var nA=S.projects.filter(alertOf).length;
+  if(S.viewer==='staff')return [
+    {id:'list',t:'案件管理',i:ICON.list,dot:nA>0},{id:'kizai',t:'機材',i:ICON.box},{id:'kintai',t:'勤怠',i:ICON.clock}];
+  return [{id:'vlist',t:'自分の案件',i:ICON.list},{id:'vinvoice',t:'請求書の材料',i:ICON.doc}];
+}
+function curNav(){
+  if(S.page==='detail')return S.viewer==='staff'?'list':'vlist';
+  return S.page;
+}
+function renderFrame(){
+  var items=navItems(),cur=curNav();
+  $('side').innerHTML='<div class="brand"><span class="brand-badge" aria-hidden="true">業</span>業務ポータル</div>'+
+    items.map(function(n){return '<button class="nav" data-act="nav" data-p="'+n.id+'"'+(cur===n.id?' aria-current="page"':'')+'>'+n.i+'<span>'+n.t+(n.dot?'<span class="dot-alert" aria-label="要対応あり"></span>':'')+'</span></button>';}).join('')+
+    '<div class="sidenote"><b>体験用の見本</b>押したり入力したりして、動きを確かめられます。実際の会社のデータにはつながっていません。</div>';
+  $('top').innerHTML='<div class="brand-m"><span class="brand-badge" aria-hidden="true">業</span><span class="bt">業務ポータル</span></div>'+
+    '<div class="seg" role="group" aria-label="見え方の切り替え"><button data-act="viewer" data-v="staff" aria-pressed="'+(S.viewer==='staff')+'"><span class="long">社員として見る</span><span class="short">社員で見る</span></button>'+
+    '<button data-act="viewer" data-v="vendor" aria-pressed="'+(S.viewer==='vendor')+'"><span class="long">外注スタッフとして見る</span><span class="short">外注で見る</span></button></div>';
+  $('tabs').innerHTML=items.map(function(n){return '<button data-act="nav" data-p="'+n.id+'"'+(cur===n.id?' aria-current="page"':'')+'>'+n.i+'<span>'+n.t+(n.dot?'<span class="dot-alert" aria-label="要対応あり"></span>':'')+'</span></button>';}).join('');
+}
+function renderView(){
+  var h,p=S.openId&&proj(S.openId);
+  if(S.page==='detail'&&p)h=S.viewer==='staff'?detailView(p):vdetailView(p);
+  else if(S.page==='kizai')h=kizaiView();
+  else if(S.page==='kintai')h=kintaiView();
+  else if(S.page==='vlist')h=vlistView();
+  else if(S.page==='vinvoice')h=vinvoiceView();
+  else h=listView();
+  $('view').innerHTML=h;
+  var cb=$('chatbox');if(cb)cb.scrollTop=cb.scrollHeight;
+}
+function doneCount(){var n=0;for(var k in S.gdone)if(S.gdone[k])n++;return n;}
+function renderGuide(){
+  var n=doneCount(),all=n>=STEPS.length;
+  var h='<button class="g-bar" data-act="gtoggle" aria-expanded="'+S.gopen+'"><span class="gp">体験ガイド '+(Math.min(S.gcur,STEPS.length-1)+1)+'/'+STEPS.length+'</span><span class="gc">'+(all?'体験は以上です':STEPS[S.gcur].t)+'</span><span class="chev"></span></button>'+
+   '<div class="g-body"><h2>体験ガイド</h2><p class="g-lead">5つの体験を順に試せます（済 '+n+'/'+STEPS.length+'）。好きな順でも大丈夫です。</p><ol>'+
+   STEPS.map(function(s,i){
+     var cls='gs'+(i===S.gcur?' cur':'')+(S.gdone[i]?' done':'');
+     return '<li class="'+cls+'"><button class="gt" data-act="gstep" data-n="'+i+'" aria-current="'+(i===S.gcur?'step':'false')+'"><span class="gn">'+(S.gdone[i]?'✓':(i+1))+'</span><span>'+s.t+'</span></button>'+
+       (i===S.gcur?'<div class="gtx">'+s.x+'<br><button class="btn sm" data-act="ggo" data-n="'+i+'">'+s.b+'</button></div>':'')+'</li>';
+   }).join('')+'</ol><div class="g-foot">'+(all?'<div class="done-msg">5つとも体験しました。ご自身の会社の仕事に置き換えると、どこが楽になりそうか、想像してみてください。</div>':'')+
+   (S.resetAsk?'<div class="note info">見本を最初の状態に戻します。よろしいですか？<div class="acts"><button class="btn sm red" data-act="resetyes">戻す</button><button class="btn sm line" data-act="resetno">やめる</button></div></div>':'<button class="btn sm line reset" data-act="resetask">見本を最初の状態に戻す</button>')+'</div></div>';
+  var g=$('guide');g.className='guide'+(S.gopen?' open':'');g.innerHTML=h;
+}
+function render(){renderFrame();renderView();renderGuide();}
+
+/* ===== 動作 ===== */
+function complete(n){
+  if(S.gdone[n])return;
+  S.gdone[n]=true;
+  if(S.gcur===n){var nx=n+1;while(nx<STEPS.length&&S.gdone[nx])nx++;S.gcur=nx<STEPS.length?nx:n;}
+}
+function resetNav(){S.notes={};S.picker=null;S.form={};}
+function go(page,id){
+  resetNav();S.gopen=false;S.page=page;S.openId=id||null;
+  render();window.scrollTo(0,0);
+}
+function note(key,type,t){S.notes[key]={type:type,t:t};}
+function overlap(v,date,s,e,ignoreProj){
+  for(var i=0;i<S.projects.length;i++){var p=S.projects[i];if(p.id===ignoreProj)continue;
+    for(var j=0;j<p.orders.length;j++){var o=p.orders[j];
+      if(o.v===v&&o.date===date&&toMin(s)<toMin(o.e)&&toMin(o.s)<toMin(e))return {p:p,o:o};}}
+  return null;
+}
+var ACT={
+  nav:function(el){go(el.dataset.p);},
+  viewer:function(el){
+    var v=el.dataset.v;if(v===S.viewer)return;
+    S.viewer=v;resetNav();S.openId=null;S.page=v==='staff'?'list':'vlist';
+    if(v==='vendor')complete(3);
+    render();window.scrollTo(0,0);
+  },
+  filter:function(){S.filterRed=!S.filterRed;complete(0);render();},
+  open:function(el){
+    var id=el.dataset.id;
+    if(S.viewer==='staff'){delete S.unread[id];}
+    go('detail',id);
+    if(el.dataset.to==='eq')scrollToSec('sec-eq');
+  },
+  back:function(){go(S.viewer==='staff'?'list':'vlist');},
+  confirmproj:function(){
+    var p=proj(S.openId);p.prov=false;
+    note('order','ok','案件を確定にしました。外注への発注と機材の割り当てに進めます。');
+    render();
+  },
+  order:function(){
+    var p=proj(S.openId),f=S.form,amt=parseInt(f.amt,10);
+    if(!f.amt||isNaN(amt)||amt<=0){note('order','err','金額を入れてください（例 35000）。');render();return;}
+    if(!f.date||!f.s||!f.e){note('order','err','日付と時間を入れてください。');render();return;}
+    if(toMin(f.s)>=toMin(f.e)){note('order','err','終了の時刻は、開始より後にしてください。');render();return;}
+    var ov=overlap(f.v,f.date,f.s,f.e,null);
+    if(ov){note('order','err','止めました: '+vend(f.v).name+'さんは、同じ時間に「'+ov.p.name+'」（'+ov.o.s+'〜'+ov.o.e+'）が入っています。二重の発注はできません。');render();return;}
+    var id='o'+(100+Math.floor(Math.random()*9000));
+    p.orders.push({id:id,v:f.v,role:f.role,date:f.date,s:f.s,e:f.e,amt:amt,st:'pending'});
+    var nm=vend(f.v).name;
+    S.form={};
+    note('order','ok','発注しました。'+nm+'さんの返事を待っています（体験では実際には送られません）。日時と金額は、このとおり記録されます。');
+    render();
+  },
+  approve:function(el){
+    var p=proj(S.openId);
+    p.orders.forEach(function(o){if(o.id===el.dataset.id)o.st='ok';});
+    note('order','ok','外注スタッフが承認しました。「確定」になり、上の線も進みました。');
+    complete(1);render();
+  },
+  vaccept:function(el){
+    var p=proj(S.openId);
+    p.orders.forEach(function(o){if(o.id===el.dataset.id)o.st='ok';});
+    note('vorder','ok','引き受けました。社員の画面でも「確定」になります。');
+    complete(1);render();
+  },
+  cancelorder:function(el){
+    var p=proj(S.openId);
+    p.orders=p.orders.filter(function(o){return o.id!==el.dataset.id;});
+    note('order','info','発注を取り消しました。');render();
+  },
+  picker:function(el){S.picker=S.picker===el.dataset.k?null:el.dataset.k;render();},
+  pick:function(el){
+    var p=proj(S.openId),k=el.dataset.k,u=el.dataset.u,e=p.eq.filter(function(x){return x.k===k;})[0];
+    if(e.units.indexOf(u)>=0){note('eq','info',unitName(u)+'は、すでにこの案件に入っています。');render();return;}
+    var by=usedBy(u,p.date,p.id);
+    if(by){note('eq','err','止めました: '+unitName(u)+'は '+md(p.date)+' の「'+by.name+'」で使用中です。同じ日に同じ機材を二重には入れられません。');complete(2);render();return;}
+    if(e.units.length+e.rental>=e.need){note('eq','info',kind(k).name+'は必要な点数がすでにそろっています。');render();return;}
+    e.units.push(u);
+    note('eq','ok',unitName(u)+'を割り当てました。不足の数が自動で変わります。');complete(2);render();
+  },
+  unassign:function(el){
+    var p=proj(S.openId),e=p.eq.filter(function(x){return x.k===el.dataset.k;})[0];
+    e.units=e.units.filter(function(u){return u!==el.dataset.u;});
+    note('eq','info',unitName(el.dataset.u)+'を外しました。');complete(2);render();
+  },
+  auto:function(el){
+    var p=proj(S.openId),k=kind(el.dataset.k),e=p.eq.filter(function(x){return x.k===k.id;})[0],n=0;
+    for(var i=0;i<k.units.length;i++){
+      var uid=k.id+i;
+      if(e.units.length+e.rental>=e.need)break;
+      if(e.units.indexOf(uid)>=0||usedBy(uid,p.date,p.id))continue;
+      e.units.push(uid);n++;
+    }
+    var short=Math.max(0,e.need-e.units.length-e.rental);
+    note('eq',short?'err':'ok',n?(short?n+'点を割り当てました。この日の空きはここまでで、あと'+short+'点が足りません。':n+'点を割り当てました。不足はなくなりました。'):'この日に空いている'+k.name+'はありません（他の案件で使用中）。レンタルの依頼が必要です。');
+    complete(2);render();
+  },
+  rent:function(el){
+    var p=proj(S.openId),e=p.eq.filter(function(x){return x.k===el.dataset.k;})[0];
+    e.rental=Math.max(0,e.need-e.units.length);
+    note('eq','ok','レンタルを依頼しました（返事待ち）。案件の線の色も黄色に変わります。');complete(2);render();
+  },
+  unrent:function(el){
+    var p=proj(S.openId),e=p.eq.filter(function(x){return x.k===el.dataset.k;})[0];
+    e.rental=0;note('eq','info','レンタルの依頼を取り消しました。');render();
+  },
+  addneed:function(){
+    var p=proj(S.openId),f=S.form,k=f.nk||'cam',n=parseInt(f.nn||'1',10),e=p.eq.filter(function(x){return x.k===k;})[0];
+    if(e)e.need+=n;else p.eq.push({k:k,need:n,units:[],rental:0});
+    note('eq','ok',kind(k).name+'を'+n+'点、必要に足しました。割り当てると不足が自動で数えられます。');complete(2);render();
+  },
+  chatsend:function(){
+    var t=(S.form.chat||'').trim();if(!t)return;
+    var p=proj(S.openId),st=S.viewer==='staff';
+    p.chat.push({from:st?'staff':ME_VENDOR,name:st?ME_STAFF:vend(ME_VENDOR).name,t:nowHM(),txt:t});
+    S.form.chat='';render();
+    var i=$('chatin');if(i)i.focus();
+  },
+  punchin:function(){S.att.todayIn=nowHM();S.att.outT=hm(Math.min(toMin(S.att.todayIn)+480,1439));render();},
+  punchout:function(){
+    var a=S.att,fare=parseInt(a.fare,10);if(isNaN(fare)||fare<0)fare=0;
+    var out=a.outT&&toMin(a.outT)>toMin(a.todayIn)?a.outT:hm(Math.min(toMin(a.todayIn)+1,1439));
+    a.recs.push({iso:TODAY,i:a.todayIn,o:toMin(out)<toMin(a.todayIn)?a.todayIn:out,fare:fare});
+    a.todayIn=null;render();
+  },
+  punchreset:function(){S.att.recs=S.att.recs.filter(function(r){return r.iso!==TODAY;});S.att.todayIn=null;S.att.report=false;render();},
+  report:function(){S.att.report=true;complete(4);render();var r=$('report');if(r)r.scrollIntoView({behavior:'smooth',block:'start'});},
+  reportclose:function(){S.att.report=false;render();},
+  gtoggle:function(){S.gopen=!S.gopen;renderGuide();},
+  gstep:function(el){S.gcur=+el.dataset.n;renderGuide();},
+  ggo:function(el){
+    var n=+el.dataset.n;S.gopen=false;
+    if(n===3){S.viewer='vendor';S.page='vlist';S.openId=null;resetNav();complete(3);render();window.scrollTo(0,0);return;}
+    S.viewer='staff';
+    if(n===0){go('list');}
+    else if(n===1){go('detail','p6');}
+    else if(n===2){go('detail','p3');scrollToSec('sec-eq');}
+    else if(n===4){go('kintai');}
+  },
+  resetask:function(){S.resetAsk=true;renderGuide();},
+  resetno:function(){S.resetAsk=false;renderGuide();},
+  resetyes:function(){S=initState();render();window.scrollTo(0,0);}
+};
+function scrollToSec(id){setTimeout(function(){var e=$(id);if(e){var y=e.getBoundingClientRect().top+window.pageYOffset-110;window.scrollTo(0,y);}},30);}
+
+document.addEventListener('click',function(ev){
+  var el=ev.target.closest('[data-act]');if(!el)return;
+  var a=el.dataset.act;
+  if(el.closest('form')&&el.type==='submit')return; /* submit で処理 */
+  if(ACT[a]){ev.preventDefault();ACT[a](el);}
+});
+document.addEventListener('submit',function(ev){
+  ev.preventDefault();
+  var f=ev.target;
+  if(f.id==='orderform')ACT.order();
+  else if(f.id==='needform')ACT.addneed();
+  else if(f.id==='chatform')ACT.chatsend();
+});
+document.addEventListener('keydown',function(ev){
+  if((ev.key==='Enter'||ev.key===' ')&&ev.target.getAttribute&&ev.target.getAttribute('role')==='button'){
+    ev.preventDefault();var a=ev.target.dataset.act;if(ACT[a])ACT[a](ev.target);
+  }
+});
+document.addEventListener('input',function(ev){
+  var t=ev.target,k=t.dataset&&t.dataset.f;if(!k)return;
+  if(k==='fare')S.att.fare=t.value;else if(k==='outT')S.att.outT=t.value;else S.form[k]=t.value;
+});
+document.addEventListener('change',function(ev){
+  var t=ev.target,k=t.dataset&&t.dataset.f;if(!k)return;
+  if(k==='v'){S.form.v=t.value;S.form.role=vend(t.value).skill;render();}
+});
+
+render();
+})();
+</script>
+</body>
+</html>
